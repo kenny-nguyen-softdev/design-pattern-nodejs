@@ -1,0 +1,39 @@
+{
+  "name": "design-pattern-nodejs",
+  "version": "1.0.0",
+  "description": "design-pattern-nodejs-final-project",
+  "main": "index.js",
+  "scripts": {
+    "codestyle:check": "tslint -c tslint.json -p tsconfig.json",
+    "codestyle:fix": "tslint -c tslint.json -p tsconfig.json --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nguyen-trung-kien-software-developer/design-pattern-nodejs.git"
+  },
+  "author": "kien-nguyen",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nguyen-trung-kien-software-developer/design-pattern-nodejs/issues"
+  },
+  "homepage": "https://github.com/nguyen-trung-kien-software-developer/design-pattern-nodejs#readme",
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "git add"
+    ]
+  },
+  "dependencies": {
+    "tslint": "^5.20.1",
+    "tslint-config-airbnb": "^5.11.2",
+    "typescript": "^5.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.1.4"
+  }
+}
