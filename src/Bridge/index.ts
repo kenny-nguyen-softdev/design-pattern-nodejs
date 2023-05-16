@@ -68,8 +68,10 @@ function clientCode(abstraction: Abstraction) {
 }
 
 /**
+ * 
  * The client code should be able to work with any pre-configured abstraction-
  * implementation combination.
+ * 
  */
 let implementation = new ConcreteImplementationA();
 let abstraction = new Abstraction(implementation);
