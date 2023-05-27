@@ -1,299 +1,96 @@
-export interface ITodoItem {
-  id: number;
-  title: string;
-  complete: boolean;
-}
-const data = [{}];
-let index = data.length + 2;
+// Model
+class User {
+  private _name: string;
+  private _age: number;
+  private _onChange: (() => void) | null = null;
 
-class TodosAdapter {
-  fetchTodos() {
-    return new Promise<ITodoItem[]>((resolve) => {
-      setTimeout(() => {
-        const result = [
-          ...data.sort((l, r) => (l.id > r.id ? -1 : l.id < r.id ? 1 : 0)),
-        ];
-        utils.text(utils.el(".console"), JSON.stringify(result, null, 2));
-        resolve(result);
-      }, 200);
-    });
+  constructor(name: string, age: number) {
+    this._name = name;
+    this._age = age;
   }
 
-  createTodo(title) {
-    return new Promise<boolean>((resolve) => {
-      setTimeout(() => {
-        data.push({
-          id: index++,
-          title: title,
-          complete: false,
-        });
-        resolve(true);
-      }, 200);
-    });
+  get name(): string {
+    return this._name;
   }
 
-  updateTodo(id, attrs) {
-    return new Promise<boolean>((resolve, reject) => {
-      setTimeout(() => {
-        const item = utils.find(data, (i) => i.id === id);
-        if (item) {
-          Object.assign(item, attrs);
-          resolve(true);
-        } else {
-          reject(
-            new Error(`Can't update. "todo" task with id: ${id} was not found`)
-          );
-        }
-      });
-    });
+  set name(name: string) {
+    this._name = name;
+    this._onChange?.();
   }
 
-  deleteTodo(id) {
-    return new Promise<boolean>((resolve, reject) => {
-      setTimeout(() => {
-        const item = utils.find(data, (i) => i.id === id);
-        const index = data.indexOf(item);
-        if (item) {
-          data.splice(index, 1);
-          resolve(true);
-        } else {
-          reject(
-            new Error(`Can't delete. "todo" task with id: ${id} was not found`)
-          );
-        }
-      });
-    });
+  get age(): number {
+    return this._age;
+  }
+
+  set age(age: number) {
+    this._age = age;
+    this._onChange?.();
+  }
+
+  setOnChange(callback: () => void): void {
+    this._onChange = callback;
   }
 }
 
-function dispatcher() {
-  const handlers = [];
+// ViewModel
+class UserViewModel {
+  private _user: User;
 
-  return {
-    add(handler) {
-      if (!handler) {
-        throw new Error("Can't attach to empty handler");
-      }
-      handlers.push(handler);
-
-      return function () {
-        const index = handlers.indexOf(handler);
-        if (~index) {
-          return handlers.splice(index, 1);
-        }
-        throw new Error(
-          "Ohm! Something went wrong with detaching unexisting event handler"
-        );
-      };
-    },
-
-    notify() {
-      const args = [].slice.call(arguments, 0);
-      for (const handler of handlers) {
-        handler.apply(null, args);
-      }
-    },
-  };
-}
-
-function initEvents(...args) {
-  const events = {};
-  for (const key of args) {
-    events[key] = dispatcher();
-  }
-  return {
-    on(eventName, handler) {
-      return events[eventName].add(handler);
-    },
-    trigger(eventName) {
-      events[eventName].notify();
-    },
-  };
-}
-
-class Base<S = {}> {
-  state: S;
-
-  constructor(...args: string[]) {
-    const events = initEvents(...args);
-
-    this.on = events.on;
-    this.trigger = events.trigger;
+  constructor(user: User) {
+    this._user = user;
   }
 
-  on(eventName, handler) {
-    throw new Error("Not implemented");
+  get name(): string {
+    return this._user.name;
   }
 
-  trigger(eventName) {
-    throw new Error("Not implemented");
+  set name(name: string) {
+    this._user.name = name;
   }
 
-  prop<K extends keyof S>(propName: K, val?: S[K]): S[K] {
-    if (arguments.length > 1 && val !== (this.state as any)[propName]) {
-      (this.state as any)[propName] = val;
-      this.trigger(`change: ${propName}`);
-    }
+  get age(): number {
+    return this._user.age;
+  }
 
-    return this.state[propName];
+  set age(age: number) {
+    this._user.age = age;
   }
 }
 
-class TodosModel extends Base {
-  static inst = null as TodosModel;
-  static instance() {
-    if (TodosModel.inst === null) {
-      TodosModel.inst = new TodosModel();
-      TodosModel.inst.fetch();
-    }
+// View
+class UserView {
+  private _viewModel: UserViewModel;
 
-    return TodosModel.inst;
-  }
-  adapter = new TodosAdapter();
-  items = [] as ITodoItem[];
-
-  constructor() {
-    super("change:items");
+  constructor(viewModel: UserViewModel) {
+    this._viewModel = viewModel;
+    this._viewModel.name = "Initial Name"; // Initial name set in ViewModel
+    this._viewModel.age = 18; // Initial age set in ViewModel
   }
 
-  getItems() {
-    return this.items;
+  render(): void {
+    console.log(`Name: ${this._viewModel.name}`);
+    console.log(`Age: ${this._viewModel.age}`);
   }
 
-  setItems(val) {
-    if (this.items !== val) {
-      this.items = val;
-      this.trigger("change:items");
-    }
+  updateName(name: string): void {
+    this._viewModel.name = name;
   }
 
-  async fetch() {
-    const items = await this.adapter.fetchTodos();
-    this.setItems(items);
-  }
-
-  createTodo(title) {
-    return this.adapter.createTodo(title);
-  }
-
-  updateTodo(item: ITodoItem) {
-    const { id, ...attrs } = item;
-    return this.adapter.updateTodo(id, attrs);
-  }
-
-  deleteTodo(item: ITodoItem) {
-    const { id } = item;
-    return this.adapter.deleteTodo(id);
+  updateAge(age: number): void {
+    this._viewModel.age = age;
   }
 }
 
-const instances = new WeakMap();
+// Usage
+const user = new User("John Doe", 25);
+const viewModel = new UserViewModel(user);
+const view = new UserView(viewModel);
 
-export function current<T extends {}, O extends {}>(
-  ctor: { new (...args): T },
-  options?: O
-): T {
-  if (instances.has(ctor)) {
-    return instances.get(ctor);
-  }
-  const inst = new ctor(options);
-  instances.set(ctor, inst);
+viewModel.setOnChange(() => {
+  view.render(); // Automatically update the view when ViewModel changes
+});
 
-  return inst;
-}
+view.render(); // Initial rendering
 
-export function html(el, html?: string) {
-  if (arguments.length > 1) {
-    el.innerHTML = html;
-  }
-  return el.innerHTML;
-}
-
-export function el(selector, inst?) {
-  inst = inst || document;
-  if (!selector) {
-    return null;
-  }
-  if ("string" === typeof selector) {
-    return inst.querySelector(selector);
-  }
-  return selector;
-}
-
-export function attr(el, name, val?) {
-  if (arguments.length > 2) {
-    el.setAttribute(name, val);
-  }
-  return el.getAttribute(name);
-}
-
-export function text(el, text?) {
-  if (arguments.length > 1) {
-    el.innerText = text;
-  }
-  return el.innerText;
-}
-
-export function remove(el) {
-  el.parentNode.removeChild(el);
-}
-
-export function on(inst, selector, eventName, fn) {
-  const handler = function (evnt) {
-    if (evnt.target.matches(selector)) {
-      fn(evnt);
-    }
-  };
-  inst.addEventListener(eventName, handler);
-  return function () {
-    inst.removeEventListener(eventName, handler);
-  };
-}
-
-export function trigger(el, eventName) {
-  el.dispatchEvent(new Event(eventName, { bubbles: true }));
-}
-
-export function getResult(inst, getFn) {
-  const fnOrAny = getFn && getFn();
-  if (typeof fnOrAny === "function") {
-    return fnOrAny.call(inst);
-  }
-  return fnOrAny;
-}
-
-export function find<T>(items: T[], fn: (item: T) => boolean) {
-  for (const item of items) {
-    if (fn(item)) {
-      return item;
-    }
-  }
-  return null;
-}
-
-export function filter<T>(items: T[], fn: (item: T) => boolean): T[] {
-  const res = [] as T[];
-  for (const item of items) {
-    if (fn(item)) {
-      res.push(item);
-    }
-  }
-  return res;
-}
-
-export function map<T, Y>(items: T[], fn: (item: T) => Y): Y[] {
-  const res = [] as Y[];
-  for (const item of items) {
-    res.push(fn(item));
-  }
-  return res;
-}
-
-export function last<T>(items: T[], from = 1): T[] {
-  const length = items.length;
-  return [].slice.call(items, from, length);
-}
-
-export function first<t>(items: T[], n = 1) {
-  return [].slice.call(items, 0, n);
-}
+view.updateName("Jane Smith"); // Updating name
+view.updateAge(30); // Updating age
